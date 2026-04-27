@@ -55,3 +55,29 @@ A Node.js backend system for managing and broadcasting digital content across sc
 2. **Missing Dates:** If `start_time` or `end_time` are not provided or are null, the content is considered ineligible for live broadcast.
 3. **Database Timezones:** It is assumed the Node.js server and PostgreSQL instance are operating in the same timezone for `NOW()` comparisons.
 4. **Caching:** The live endpoint is cached for 30 seconds globally to reduce database load.
+
+## Environment Variables
+
+```
+env
+PORT=3000
+JWT_SECRET=your_jwt_secret_here
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+DB_NAME=content_broadcasting
+```## Default Test Users (after running seed.js)
+
+| Role      | Email                    | Password  |
+|-----------|--------------------------|-----------|
+| Principal | principal@school.com     | admin123  |
+| Teacher   | teacher@school.com       | teach123  |
+
+5. **File Storage:** Files are stored locally in the `uploads/` folder. 
+   The `/uploads` route serves them statically. S3 integration is not implemented.
+6. **Rate Limiting:** Public `/content/live` endpoint is limited to 
+   100 requests per 15 minutes per IP.
+
+## API Documentation
+Import the Postman collection from [`docs/ContentBroadcastingSystem.postman_collection.json`](./docs/ContentBroadcastingSystem.postman_collection.json)
