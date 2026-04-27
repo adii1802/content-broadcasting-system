@@ -1,0 +1,422 @@
+{
+  "info": {
+    "name": "Content Broadcasting System",
+    "description": "API collection for the Content Broadcasting System assignment. Covers Auth, Teacher, Principal, and Public broadcasting endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000", "type": "string" },
+    { "key": "teacher_token", "value": "", "type": "string" },
+    { "key": "principal_token", "value": "", "type": "string" },
+    { "key": "content_id", "value": "", "type": "string" },
+    { "key": "teacher_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/register", "host": ["{{base_url}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Teacher\",\n  \"email\": \"john@school.com\",\n  \"password\": \"pass1234\",\n  \"role\": \"teacher\"\n}"
+            },
+            "description": "Register a new user. Role can be 'teacher' or 'principal'."
+          },
+          "response": [
+            {
+              "name": "Success - Teacher Registered",
+              "status": "201 Created",
+              "body": "{\n  \"success\": true,\n  \"message\": \"User registered successfully\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"name\": \"John Teacher\",\n    \"email\": \"john@school.com\",\n    \"role\": \"teacher\",\n    \"token\": \"eyJhbGci...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - Teacher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('teacher_token', res.data.token);",
+                  "  pm.collectionVariables.set('teacher_id', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teacher@school.com\",\n  \"password\": \"teach123\"\n}"
+            },
+            "description": "Login as a Teacher. Token is auto-saved to collection variable `teacher_token`."
+          },
+          "response": [
+            {
+              "name": "Success - Teacher Login",
+              "status": "200 OK",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"name\": \"Teacher\",\n    \"email\": \"teacher@school.com\",\n    \"role\": \"teacher\",\n    \"token\": \"eyJhbGci...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - Principal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('principal_token', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"principal@school.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "description": "Login as Principal. Token is auto-saved to collection variable `principal_token`."
+          },
+          "response": [
+            {
+              "name": "Success - Principal Login",
+              "status": "200 OK",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"name\": \"Principal\",\n    \"email\": \"principal@school.com\",\n    \"role\": \"principal\",\n    \"token\": \"eyJhbGci...\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teacher@school.com\",\n  \"password\": \"wrongpass\"\n}"
+            },
+            "description": "Edge case: Invalid credentials."
+          },
+          "response": [
+            {
+              "name": "Error - Invalid Credentials",
+              "status": "401 Unauthorized",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📤 Teacher - Content",
+      "item": [
+        {
+          "name": "Upload Content",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('content_id', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": { "raw": "{{base_url}}/api/content/upload", "host": ["{{base_url}}"], "path": ["api", "content", "upload"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Maths Chapter 1", "type": "text" },
+                { "key": "subject", "value": "maths", "type": "text" },
+                { "key": "description", "value": "Introduction to algebra", "type": "text" },
+                { "key": "start_time", "value": "2026-04-27T00:00:00.000Z", "type": "text" },
+                { "key": "end_time", "value": "2026-04-30T23:59:59.000Z", "type": "text" },
+                { "key": "rotation_duration", "value": "5", "type": "text" },
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "description": "Upload content as a Teacher. File must be JPG, PNG, or GIF and under 10MB. content_id is auto-saved."
+          },
+          "response": [
+            {
+              "name": "Success - Content Uploaded",
+              "status": "201 Created",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Content uploaded successfully\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"title\": \"Maths Chapter 1\",\n    \"subject\": \"maths\",\n    \"status\": \"pending\",\n    \"file_url\": \"/uploads/uuid-filename.png\"\n  }\n}"
+            },
+            {
+              "name": "Error - Invalid File Type",
+              "status": "400 Bad Request",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Only JPG, PNG, and GIF files are allowed\"\n}"
+            },
+            {
+              "name": "Error - File Too Large",
+              "status": "400 Bad Request",
+              "body": "{\n  \"success\": false,\n  \"message\": \"File size exceeds the 10MB limit\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Content",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": { "raw": "{{base_url}}/api/content/my", "host": ["{{base_url}}"], "path": ["api", "content", "my"] },
+            "description": "Get all content uploaded by the currently logged-in teacher, including status and rejection reason."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "200 OK",
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"title\": \"Maths Chapter 1\",\n      \"subject\": \"maths\",\n      \"status\": \"pending\",\n      \"rejection_reason\": null\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Content - Missing Title (Edge Case)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": { "raw": "{{base_url}}/api/content/upload", "host": ["{{base_url}}"], "path": ["api", "content", "upload"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "subject", "value": "science", "type": "text" },
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "description": "Edge case: Upload without title. Should return 400."
+          },
+          "response": [
+            {
+              "name": "Error - Missing Title",
+              "status": "400 Bad Request",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Title is required\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "✅ Principal - Approval",
+      "item": [
+        {
+          "name": "Get All Content",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{principal_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/content/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "content", "all"],
+              "query": [{ "key": "status", "value": "pending", "disabled": true }]
+            },
+            "description": "Get all content. Optional query: ?status=pending to filter."
+          },
+          "response": [
+            {
+              "name": "Success - All Content",
+              "status": "200 OK",
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"title\": \"Maths Chapter 1\",\n      \"subject\": \"maths\",\n      \"status\": \"pending\",\n      \"uploaded_by\": \"teacher-uuid\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Pending Content",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{principal_token}}" }],
+            "url": { "raw": "{{base_url}}/api/content/pending", "host": ["{{base_url}}"], "path": ["api", "content", "pending"] },
+            "description": "Get all content with status = pending."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{principal_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/api/content/{{content_id}}/approve", "host": ["{{base_url}}"], "path": ["api", "content", "{{content_id}}", "approve"] },
+            "description": "Approve content by ID. Uses content_id saved from upload step."
+          },
+          "response": [
+            {
+              "name": "Success - Approved",
+              "status": "200 OK",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Content approved\",\n  \"data\": {\n    \"id\": \"uuid\",\n    \"status\": \"approved\",\n    \"approved_by\": \"principal-uuid\",\n    \"approved_at\": \"2026-04-27T10:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Error - Content Not Found",
+              "status": "404 Not Found",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Content not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{principal_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/api/content/{{content_id}}/reject", "host": ["{{base_url}}"], "path": ["api", "content", "{{content_id}}", "reject"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Content is not appropriate for students\"\n}"
+            },
+            "description": "Reject content with a mandatory reason."
+          },
+          "response": [
+            {
+              "name": "Success - Rejected",
+              "status": "200 OK",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Content rejected\",\n  \"data\": {\n    \"id\": \"uuid\",\n    \"status\": \"rejected\",\n    \"rejection_reason\": \"Content is not appropriate for students\"\n  }\n}"
+            },
+            {
+              "name": "Error - Missing Reason",
+              "status": "400 Bad Request",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Rejection reason is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve - Teacher Tries (Edge Case)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/api/content/{{content_id}}/approve", "host": ["{{base_url}}"], "path": ["api", "content", "{{content_id}}", "approve"] },
+            "description": "Edge case: Teacher tries to approve content. Should return 403."
+          },
+          "response": [
+            {
+              "name": "Error - Forbidden",
+              "status": "403 Forbidden",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Access denied. Principal role required.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📡 Public - Live Broadcast",
+      "item": [
+        {
+          "name": "Get Live Content (All Subjects)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/content/live/{{teacher_id}}", "host": ["{{base_url}}"], "path": ["api", "content", "live", "{{teacher_id}}"] },
+            "description": "Public endpoint. No auth required. Returns currently active rotating content for the teacher across all subjects."
+          },
+          "response": [
+            {
+              "name": "Success - Live Content",
+              "status": "200 OK",
+              "body": "{\n  \"teacher_id\": \"uuid\",\n  \"live_content\": [\n    {\n      \"subject\": \"maths\",\n      \"active\": {\n        \"id\": \"uuid\",\n        \"title\": \"Maths Chapter 1\",\n        \"file_url\": \"/uploads/uuid-file.png\",\n        \"subject\": \"maths\"\n      }\n    },\n    {\n      \"subject\": \"science\",\n      \"active\": {\n        \"id\": \"uuid2\",\n        \"title\": \"Science Diagram\",\n        \"file_url\": \"/uploads/uuid-file2.jpg\",\n        \"subject\": \"science\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Live Content (Filter by Subject)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/content/live/{{teacher_id}}?subject=maths",
+              "host": ["{{base_url}}"],
+              "path": ["api", "content", "live", "{{teacher_id}}"],
+              "query": [{ "key": "subject", "value": "maths" }]
+            },
+            "description": "Public endpoint filtered to one subject."
+          },
+          "response": []
+        },
+        {
+          "name": "No Content Available (Edge Case)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/content/live/non-existent-teacher-id", "host": ["{{base_url}}"], "path": ["api", "content", "live", "non-existent-teacher-id"] },
+            "description": "Edge case: Teacher doesn't exist or has no approved/scheduled content."
+          },
+          "response": [
+            {
+              "name": "No Content",
+              "status": "200 OK",
+              "body": "{\n  \"message\": \"No content available\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Invalid Subject (Edge Case)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/content/live/{{teacher_id}}?subject=invalidsubject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "content", "live", "{{teacher_id}}"],
+              "query": [{ "key": "subject", "value": "invalidsubject" }]
+            },
+            "description": "Edge case: Invalid subject filter. Should return no content, not an error."
+          },
+          "response": [
+            {
+              "name": "No Content",
+              "status": "200 OK",
+              "body": "{\n  \"message\": \"No content available\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "No Auth Token (Edge Case)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/content/my", "host": ["{{base_url}}"], "path": ["api", "content", "my"] },
+            "description": "Edge case: Accessing protected route without token. Should return 401."
+          },
+          "response": [
+            {
+              "name": "Error - Unauthorized",
+              "status": "401 Unauthorized",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Authorization token is required\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

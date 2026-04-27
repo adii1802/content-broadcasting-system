@@ -1,0 +1,55 @@
+Architecture Notes
+
+Authentication & RBAC Flow:
+Authentication is handled via JWT (JSON Web Tokens). Upon registration/login, a user is granted a signed JWT containing their ID and role. The `authMiddleware` intercepts incoming requests, verifies the JWT signature, and attaches the payload to `req.user`. `roleMiddleware` then enforces Role-Based Access Control (RBAC), checking `req.user.role` against allowed roles (e.g. 'teacher' or 'principal') to restrict endpoints accordingly.
+
+Subject-based System Design:
+The system manages content dynamically grouped by `subject`. Content uploaded by teachers is flagged with a specific subject. The public broadcasting API automatically partitions content by subject and rotates it independently, allowing different subjects to have their own cycle times and live broadcasts concurrently without interference.
+
+Upload Handling Approach:
+File uploads are managed by `multer`, which parses `multipart/form-data`. Files are stored locally in the `/uploads` directory, securely renamed using a UUID-prefix to prevent collisions, and validated against allowed mimetypes and size limits (10MB). Invalid uploads are immediately rejected with a 400 response.
+
+Approval Workflow Design:
+Teachers upload content which initially enters a `pending` state. Principals have exclusive access to review this content via dedicated endpoints (`/api/content/pending`). They can either approve (`POST /:id/approve`) or reject (`POST /:id/reject`) the content. Only content in the `approved` state becomes eligible for live broadcast.
+
+Scheduling/Rotation Logic:
+The scheduling system operates purely on real-time math, eliminating the need for cron jobs. For a given teacher and subject:
+1. It fetches all approved content whose validity window (`start_time` to `end_time`) encompasses the current time (`NOW()`).
+2. It groups this content by subject.
+3. For each group, it determines an "epoch", which is the earliest `start_time` within that group.
+4. It calculates the `total_cycle_duration` by summing the `rotation_duration` of all active items (defaulting to 5 minutes if null).
+5. It computes the `elapsedMinutes` since the epoch and finds the current `position` within the cycle using modulo arithmetic: `elapsedMinutes % totalCycleDuration`.
+6. It iterates through the sorted items, accumulating their durations until the `position` falls within an item's time slot. That item is deemed currently active.
+
+Example:
+Items: Math1 (10m), Math2 (15m). Total Cycle: 25m. Epoch: 10:00 AM.
+At 10:20 AM, elapsed is 20m. 20 % 25 = 20.
+Accumulating:
+- Math1 (0 to 10m): 20 is not in [0, 10), so skip.
+- Math2 (10 to 25m): 20 is in [10, 25). Active item is Math2.
+
+Database Design Decisions:
+A PostgreSQL relational database is used to enforce strict integrity. The `users` table holds accounts with an ENUM-like check for roles. The `content` table uses a foreign key back to `users` for `uploaded_by` and `approved_by`. Constraints such as `CHECK (status IN (...))` ensure state validity at the database level. Times are stored as `TIMESTAMP` allowing seamless time-window queries.
+
+Folder Structure:
+The project uses a structured MVC-like layout:
+- `src/controllers`: Request/Response handlers.
+- `src/services`: Core business logic (keeps controllers thin).
+- `src/models`: Database queries and data access logic.
+- `src/routes`: Express router definitions mapping paths to controllers.
+- `src/middlewares`: Interceptors for auth, RBAC, and file uploads.
+- `src/utils`: Reusable helper functions (JWT, Responses).
+- `src/config`: DB configuration and initialization.
+
+Middleware Usage:
+- `authMiddleware`: Verifies JWT tokens.
+- `roleMiddleware`: Enforces endpoint authorization based on user roles.
+- `uploadMiddleware`: Manages Multer parsing, validation, and storage.
+- `apiLimiter`: Rate limits the public endpoint to prevent abuse.
+- `cacheMiddleware`: In-memory caching for high-traffic endpoints to improve performance.
+
+Scalability Approach:
+The public broadcasting endpoint is secured against high traffic by two layers:
+1. Rate Limiting (`express-rate-limit`): Protects against brute force or DDoS on public routes (100req/15m).
+2. Caching (`node-cache`): Responses for `/content/live` are cached for 30 seconds. This avoids hitting the DB on every single poll from client screens.
+Future scaling could involve migrating local uploads to AWS S3, and swapping `node-cache` for Redis (`ioredis`) to support distributed caching across multiple server instances.
