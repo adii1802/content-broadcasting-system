@@ -16,6 +16,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api', publicRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.status(200).json({ success: true, message: 'Content Broadcasting System API is running' });
+});
+
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'API route not found' });
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
